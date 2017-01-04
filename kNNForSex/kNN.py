@@ -13,7 +13,7 @@ def loadData(path):
     dataList = []
     with open(path,'r') as f:
         for item in f.readlines():
-            dataList.append(map(float,item.split()[:2]))
+            dataList.append(map(float,item.split()[:3]))
     sampleLen = len(dataList)
     return dataList,sampleLen
 
@@ -36,17 +36,15 @@ def classify0(inX, dataSet, labels, k):
 def getDataArray():
     dataOfBoy, lenthOfBoy = loadData("boy.txt")
     labelsOfBoy = ['A' for i in range(lenthOfBoy)]
-    x = [dataOfBoy[i][1] for i in range(lenthOfBoy)]
-    y = [dataOfBoy[i][0] for i in range(lenthOfBoy)]
-    # print x,y
-    plt.scatter(x, y, s=x*500, c=u'r', marker=u'*')
+    # x = [dataOfBoy[i][1] for i in range(lenthOfBoy)]
+    # y = [dataOfBoy[i][0] for i in range(lenthOfBoy)]
+    # plt.scatter(x, y, s=x*500, c=u'r', marker=u'*')
     dataOfGirl, lenthOfGirl = loadData("girl.txt")
     labelsOfGirl = ['B' for i in range(lenthOfGirl)]
-    x = [dataOfGirl[i][1] for i in range(lenthOfGirl)]
-    y = [dataOfGirl[i][0] for i in range(lenthOfGirl)]
-    # print x,y
-    plt.scatter(x, y, s=x*500, c=u'g', marker=u'o')
-    plt.show()
+    # x = [dataOfGirl[i][1] for i in range(lenthOfGirl)]
+    # y = [dataOfGirl[i][0] for i in range(lenthOfGirl)]
+    # plt.scatter(x, y, s=x*500, c=u'g', marker=u'o')
+    # plt.show()
     group = []
     group.extend(dataOfBoy)
     group.extend(dataOfGirl)

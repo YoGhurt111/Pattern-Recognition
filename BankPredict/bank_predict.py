@@ -2,9 +2,11 @@
 import numpy as np
 import pandas as pd
 import matplotlib.pyplot as plt
+from mpl_toolkits.mplot3d import Axes3D
 from sklearn import naive_bayes
 from sklearn import svm
 from sklearn import neighbors
+from sklearn import metrics
 
 
 
@@ -183,10 +185,23 @@ def pca(dataMat, topNfeat=9999999):
     return lowDDataMat, reconMat
 
 
-def draw(dataMat):
-    fig = plt.figure()
-    ax = fig.add_subplot(111)
-    ax.scatter(dataMat[:, 0].flatten().A[0], dataMat[:, 1].flatten().A[0], marker='*', s=80, c='green')
+def draw(dataMat, labels):
+    ax=plt.subplot(111, projection='3d')
+    failData = []
+    sccessData = []
+    i = 0
+    for flag in labels:
+        if flag == 1.0:
+            failData.append([dataMat[i, 0], dataMat[i, 1], dataMat[i, 2]])
+        else:
+            sccessData.append([dataMat[i, 0], dataMat[i, 1], dataMat[i, 2]])
+        i += 1
+        if i == 100:
+            break;
+    failData = np.array(failData)
+    sccessData = np.array(sccessData)
+    ax.scatter(failData[:, 0], failData[:, 1], failData[:, 2], marker='*', c='red')
+    ax.scatter(sccessData[:, 0], sccessData[:, 1], sccessData[:, 2], marker='^',  c='green')
     plt.show()
 
 
@@ -194,14 +209,24 @@ def draw(dataMat):
 # 训练数据处理
 df = pd.read_csv('bank-additional-full.csv')
 narray = np.array(numerical(df.values), dtype=np.float)
-results = get_results(narray)
+trainResults = get_results(narray)
 trainData = np.delete(narray, [20], axis=1)
 print np.shape(trainData)
-lowDMat, reconMat = pca(trainData, 2)
+lowDMat, reconMat = pca(trainData, 3)
 print np.shape(lowDMat)
-print np.shape(reconMat)
-draw(lowDMat, results)
+draw(lowDMat, trainResults)
+# 获取模型
+knn_model = knn_classifier(trainData, trainResults)
 # 测试数据处理
+df = pd.read_csv('bank-additional.csv')
+narray = np.array(numerical(df.values), dtype=np.float)
+testResults = get_results(narray)
+testData = np.delete(narray, [20], axis=1)
+# KNN正确率计算
+knn_predict = knn_model.predict(testData)
+accuracy = metrics.accuracy_score(testResults, knn_predict)
+print accuracy
+
 
 
 

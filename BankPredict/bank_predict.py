@@ -7,6 +7,8 @@ from sklearn import naive_bayes
 from sklearn import svm
 from sklearn import neighbors
 from sklearn import metrics
+from scipy import interp
+from sklearn.cross_validation import StratifiedKFold
 
 
 
@@ -148,8 +150,9 @@ def col20_numerical(str):
     return value[str]
 
 
-def naive_bayes_classifier():
+def naive_bayes_classifier(train_x, train_y):
     model = naive_bayes.MultinomialNB(alpha=0.01)
+    model.fit(train_x, train_y)
     return model
 
 
@@ -160,7 +163,7 @@ def knn_classifier(train_x, train_y):
 
 
 def svm_classifier(train_x, train_y):
-    model = svm.SVC(kernel='rbf', probability=True)
+    model = svm.LinearSVC()
     model.fit(train_x, train_y)
     return model
 
@@ -196,14 +199,52 @@ def draw(dataMat, labels):
         else:
             sccessData.append([dataMat[i, 0], dataMat[i, 1], dataMat[i, 2]])
         i += 1
-        if i == 100:
+        if i == 200:
             break;
     failData = np.array(failData)
     sccessData = np.array(sccessData)
-    ax.scatter(failData[:, 0], failData[:, 1], failData[:, 2], marker='*', c='red')
-    ax.scatter(sccessData[:, 0], sccessData[:, 1], sccessData[:, 2], marker='^',  c='green')
+    ax.scatter(failData[:, 0], failData[:, 1], failData[:, 2], marker=u'*', c=u'red')
+    ax.scatter(sccessData[:, 0], sccessData[:, 1], sccessData[:, 2], marker=u'^',  c=u'green')
     plt.show()
 
+
+def plot_ROC(classifier, x, y, n_folds=5):
+    #使用6折交叉验证，并且画ROC曲线
+    cv = StratifiedKFold(y, n_folds=n_folds)
+
+    mean_tpr = 0.0
+    mean_fpr = np.linspace(0, 1, 100)
+    plt.figure(figsize=(7, 7))
+    for i, (train, test) in enumerate(cv):
+        probas_ = classifier.fit(x[train], y[train]).predict_proba(x[test])
+        # Compute ROC curve and area the curve
+        #通过roc_curve()函数，求出fpr和tpr，以及阈值
+        fpr, tpr, thresholds = metrics.roc_curve(y[test], probas_[:, 1])
+        mean_tpr += interp(mean_fpr, fpr, tpr)            #对mean_tpr在mean_fpr处进行插值，通过scipy包调用interp()函数
+        mean_tpr[0] = 0.0                                 #初始处为0
+        roc_auc = metrics.auc(fpr, tpr)
+        #画图，只需要plt.plot(fpr,tpr),变量roc_auc只是记录auc的值，通过auc()函数能计算出来
+        plt.plot(fpr, tpr, lw=1, label='ROC fold %d (area = %0.2f)' % (i, roc_auc))
+
+    #画对角线
+    plt.plot([0, 1], [0, 1], '--', color=(0.6, 0.6, 0.6), label='Luck')
+
+    mean_tpr /= len(cv)                     #在mean_fpr100个点，每个点处插值插值多次取平均
+    mean_tpr[-1] = 1.0                         #坐标最后一个点为（1,1）
+    mean_auc = metrics.auc(mean_fpr, mean_tpr)        #计算平均AUC值
+    #画平均ROC曲线
+    #print mean_fpr,len(mean_fpr)
+    #print mean_tpr
+    plt.plot(mean_fpr, mean_tpr, 'k--',
+             label='Mean ROC (area = %0.2f)' % mean_auc, lw=2)
+
+    plt.xlim([-0.05, 1.05])
+    plt.ylim([-0.05, 1.05])
+    plt.xlabel('False Positive Rate')
+    plt.ylabel('True Positive Rate')
+    plt.title('Receiver operating characteristic example')
+    plt.legend(loc="lower right")
+    plt.show()
 
 
 # 训练数据处理
@@ -217,15 +258,27 @@ print np.shape(lowDMat)
 draw(lowDMat, trainResults)
 # 获取模型
 knn_model = knn_classifier(trainData, trainResults)
+# bayes_model = naive_bayes_classifier(trainData, trainResults)
+svm_model = svm_classifier(trainData, trainResults)
 # 测试数据处理
 df = pd.read_csv('bank-additional.csv')
 narray = np.array(numerical(df.values), dtype=np.float)
 testResults = get_results(narray)
 testData = np.delete(narray, [20], axis=1)
+print
 # KNN正确率计算
 knn_predict = knn_model.predict(testData)
-accuracy = metrics.accuracy_score(testResults, knn_predict)
-print accuracy
+knn_accuracy = metrics.accuracy_score(testResults, knn_predict)
+print knn_accuracy
+plot_ROC(knn_model, testData, np.array(testResults))
+# Bayes正确率计算
+# bayes_predict = bayes_model.predict(testData)
+# bayes_accuracy = metrics.accuracy_score(testResults, bayes_predict)
+# print bayes_accuracy
+# SVM正确率计算
+# svm_predict = svm_model.predict(testData)
+# svm_accuracy = metrics.accuracy_score(testResults, svm_predict)
+# print svm_accuracy
 
 
 

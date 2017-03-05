@@ -3,11 +3,12 @@ import numpy as np
 import pandas as pd
 import matplotlib.pyplot as plt
 from mpl_toolkits.mplot3d import Axes3D
-from sklearn import naive_bayes
-from sklearn import svm
+from sklearn.linear_model import LogisticRegression
 from sklearn import neighbors
 from sklearn import metrics
+from sklearn import preprocessing
 from scipy import interp
+from sklearn import tree
 from sklearn.cross_validation import StratifiedKFold
 
 
@@ -150,8 +151,8 @@ def col20_numerical(str):
     return value[str]
 
 
-def naive_bayes_classifier(train_x, train_y):
-    model = naive_bayes.MultinomialNB(alpha=0.01)
+def Decision_Tree_classifier(train_x, train_y):
+    model = tree.DecisionTreeClassifier(max_depth=5)
     model.fit(train_x, train_y)
     return model
 
@@ -162,9 +163,9 @@ def knn_classifier(train_x, train_y):
     return model
 
 
-def svm_classifier(train_x, train_y):
-    model = svm.LinearSVC()
-    model.fit(train_x, train_y)
+def logistic_regression_classifier(train_x, train_y):
+    model = LogisticRegression(penalty='l2')
+    model.fit(trainData, trainResults)
     return model
 
 
@@ -185,7 +186,7 @@ def pca(dataMat, topNfeat=9999999):
     redEigVects = eigVects[:, eigValInd]
     lowDDataMat = meanRemoved * redEigVects
     reconMat = (lowDDataMat * redEigVects.T) + meanVals
-    return lowDDataMat, reconMat
+    return lowDDataMat
 
 
 def draw(dataMat, labels):
@@ -233,8 +234,6 @@ def plot_ROC(classifier, x, y, n_folds=5):
     mean_tpr[-1] = 1.0                         #坐标最后一个点为（1,1）
     mean_auc = metrics.auc(mean_fpr, mean_tpr)        #计算平均AUC值
     #画平均ROC曲线
-    #print mean_fpr,len(mean_fpr)
-    #print mean_tpr
     plt.plot(mean_fpr, mean_tpr, 'k--',
              label='Mean ROC (area = %0.2f)' % mean_auc, lw=2)
 
@@ -250,35 +249,41 @@ def plot_ROC(classifier, x, y, n_folds=5):
 # 训练数据处理
 df = pd.read_csv('bank-additional-full.csv')
 narray = np.array(numerical(df.values), dtype=np.float)
-trainResults = get_results(narray)
+trainResults = np.array(get_results(narray))
 trainData = np.delete(narray, [20], axis=1)
-print np.shape(trainData)
-lowDMat, reconMat = pca(trainData, 3)
-print np.shape(lowDMat)
-draw(lowDMat, trainResults)
+print '训练样本的个数和每个样本的特征数：', np.shape(trainData)
+lowDMat_train = pca(trainData, 3)
+print '经过PCA降维后的样本个数和每个样本的特征数：', np.shape(lowDMat_train)
+draw(lowDMat_train, trainResults)
+trainData = preprocessing.normalize(trainData)
+
 # 获取模型
 knn_model = knn_classifier(trainData, trainResults)
-# bayes_model = naive_bayes_classifier(trainData, trainResults)
-svm_model = svm_classifier(trainData, trainResults)
+decision_tree_model = Decision_Tree_classifier(trainData, trainResults)
+logistic_regression_model = logistic_regression_classifier(trainData, trainResults)
+
 # 测试数据处理
 df = pd.read_csv('bank-additional.csv')
 narray = np.array(numerical(df.values), dtype=np.float)
-testResults = get_results(narray)
-testData = np.delete(narray, [20], axis=1)
-print
+testResults = np.array(get_results(narray))
+testData = preprocessing.normalize(np.delete(narray, [20], axis=1))
+
+
 # KNN正确率计算
 knn_predict = knn_model.predict(testData)
 knn_accuracy = metrics.accuracy_score(testResults, knn_predict)
-print knn_accuracy
+print '在同等数据量的情况下，KNN算法的正确率是：',  knn_accuracy
 plot_ROC(knn_model, testData, np.array(testResults))
-# Bayes正确率计算
-# bayes_predict = bayes_model.predict(testData)
-# bayes_accuracy = metrics.accuracy_score(testResults, bayes_predict)
-# print bayes_accuracy
-# SVM正确率计算
-# svm_predict = svm_model.predict(testData)
-# svm_accuracy = metrics.accuracy_score(testResults, svm_predict)
-# print svm_accuracy
+# 决策树正确率计算
+decision_tree_predict = decision_tree_model.predict(testData)
+decision_tree_accuracy = metrics.accuracy_score(testResults, decision_tree_predict)
+print '在同等数据量的情况下，决策树算法的正确率是：', decision_tree_accuracy
+plot_ROC(decision_tree_model, testData, np.array(testResults))
+# Logistic回归正确率计算
+logistic_regression_predict = logistic_regression_model.predict(testData)
+logistic_regression_accuracy = metrics.accuracy_score(testResults, logistic_regression_predict)
+plot_ROC(logistic_regression_model, testData, np.array(testResults))
+print '在同等数据量的情况下，Logistic回归算法的正确率是：', logistic_regression_accuracy
 
 
 

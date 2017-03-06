@@ -158,7 +158,7 @@ def Decision_Tree_classifier(train_x, train_y):
 
 
 def knn_classifier(train_x, train_y):
-    model = neighbors.KNeighborsClassifier()
+    model = neighbors.KNeighborsClassifier(weights="uniform")
     model.fit(train_x, train_y)
     return model
 
@@ -227,13 +227,13 @@ def plot_ROC(classifier, x, y, n_folds=5):
         #画图，只需要plt.plot(fpr,tpr),变量roc_auc只是记录auc的值，通过auc()函数能计算出来
         plt.plot(fpr, tpr, lw=1, label='ROC fold %d (area = %0.2f)' % (i, roc_auc))
 
-    #画对角线
+    # 画对角线
     plt.plot([0, 1], [0, 1], '--', color=(0.6, 0.6, 0.6), label='Luck')
 
     mean_tpr /= len(cv)                     #在mean_fpr100个点，每个点处插值插值多次取平均
     mean_tpr[-1] = 1.0                         #坐标最后一个点为（1,1）
     mean_auc = metrics.auc(mean_fpr, mean_tpr)        #计算平均AUC值
-    #画平均ROC曲线
+    # 画平均ROC曲线
     plt.plot(mean_fpr, mean_tpr, 'k--',
              label='Mean ROC (area = %0.2f)' % mean_auc, lw=2)
 
@@ -244,23 +244,24 @@ def plot_ROC(classifier, x, y, n_folds=5):
     plt.title('Receiver operating characteristic example')
     plt.legend(loc="lower right")
     plt.show()
+    return mean_fpr, mean_tpr, mean_auc
 
 
 # 训练数据处理
 df = pd.read_csv('bank-additional-full.csv')
 narray = np.array(numerical(df.values), dtype=np.float)
 trainResults = np.array(get_results(narray))
-trainData = np.delete(narray, [20], axis=1)
+trainData = preprocessing.normalize(np.delete(narray, [20], axis=1))
 print '训练样本的个数和每个样本的特征数：', np.shape(trainData)
 lowDMat_train = pca(trainData, 3)
 print '经过PCA降维后的样本个数和每个样本的特征数：', np.shape(lowDMat_train)
 draw(lowDMat_train, trainResults)
-trainData = preprocessing.normalize(trainData)
 
 # 获取模型
 knn_model = knn_classifier(trainData, trainResults)
 decision_tree_model = Decision_Tree_classifier(trainData, trainResults)
 logistic_regression_model = logistic_regression_classifier(trainData, trainResults)
+
 
 # 测试数据处理
 df = pd.read_csv('bank-additional.csv')
@@ -273,17 +274,40 @@ testData = preprocessing.normalize(np.delete(narray, [20], axis=1))
 knn_predict = knn_model.predict(testData)
 knn_accuracy = metrics.accuracy_score(testResults, knn_predict)
 print '在同等数据量的情况下，KNN算法的正确率是：',  knn_accuracy
-plot_ROC(knn_model, testData, np.array(testResults))
+knn_x, knn_y, knn_auc = plot_ROC(knn_model, testData, np.array(testResults))
+
+
 # 决策树正确率计算
 decision_tree_predict = decision_tree_model.predict(testData)
 decision_tree_accuracy = metrics.accuracy_score(testResults, decision_tree_predict)
 print '在同等数据量的情况下，决策树算法的正确率是：', decision_tree_accuracy
-plot_ROC(decision_tree_model, testData, np.array(testResults))
+dt_x, dt_y, dt_auc = plot_ROC(decision_tree_model, testData, np.array(testResults))
+
+
 # Logistic回归正确率计算
 logistic_regression_predict = logistic_regression_model.predict(testData)
 logistic_regression_accuracy = metrics.accuracy_score(testResults, logistic_regression_predict)
-plot_ROC(logistic_regression_model, testData, np.array(testResults))
+log_x, log_y, log_auc = plot_ROC(logistic_regression_model, testData, np.array(testResults))
 print '在同等数据量的情况下，Logistic回归算法的正确率是：', logistic_regression_accuracy
+
+
+
+# 三种算法的ROC曲线的比较
+# 画对角线
+plt.plot([0, 1], [0, 1], '--', color=(0.6, 0.6, 0.6))
+# kNN的平均ROC曲线
+plt.plot(knn_x, knn_y, 'k--', label='Mean ROC About kNN(area = %0.2f)' % knn_auc,  lw=2, color="red")
+# Decision Tree的平均ROC曲线
+plt.plot(dt_x, dt_y, 'k--' ,label='Mean ROC About Decision Tree(area = %0.2f)' % dt_auc, lw=2, color="blue")
+# Logistic的平均ROC曲线
+plt.plot(log_x, log_y, 'k--', label='Mean ROC About Logistic(area = %0.2f)' % log_auc, lw=2, color="yellow")
+plt.xlim([-0.05, 1.05])
+plt.ylim([-0.05, 1.05])
+plt.xlabel('False Positive Rate')
+plt.ylabel('True Positive Rate')
+plt.title('Compare for kNN, DecisionTree, Logistic')
+plt.legend(loc="lower right")
+plt.show()
 
 
 

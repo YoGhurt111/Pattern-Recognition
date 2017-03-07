@@ -152,7 +152,7 @@ def col20_numerical(str):
 
 
 def Decision_Tree_classifier(train_x, train_y):
-    model = tree.DecisionTreeClassifier(max_depth=5)
+    model = tree.DecisionTreeClassifier(criterion="entropy", max_depth=5)
     model.fit(train_x, train_y)
     return model
 

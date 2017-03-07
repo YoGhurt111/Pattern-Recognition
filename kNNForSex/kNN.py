@@ -59,7 +59,7 @@ def getDataArray():
 def judge(data, lenth, label, group, labels):
     rightNum = 0.0
     for i in range(lenth):
-        if classify0(data[i], group, labels, 3) == label[i]:
+        if classify0(data[i], group, labels, 1) == label[i]:
             rightNum = rightNum + 1
     print rightNum/lenth
 

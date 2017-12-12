@@ -8,11 +8,12 @@ import matplotlib.cm as cm
 import matplotlib.mlab as mlab
 import matplotlib
 
+
 def loadData(path):
     dataList = []
-    with open(path,'r') as f:
+    with open(path, 'r') as f:
         for item in f.readlines():
-            dataList.append(map(float,item.split()[:2]))
+            dataList.append(map(float, item.split()[:2]))
     sampleLen = len(dataList)
     return dataList,sampleLen
 
